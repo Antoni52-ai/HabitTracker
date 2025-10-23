@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Трекер привычек</title>
+  <style>
+    body { font-family: sans-serif; max-width: 600px; margin: 30px auto; }
+    ul { list-style: none; padding: 0; }
+    li { padding: 8px; background: #f0f0f0; margin: 4px 0; border-radius: 4px; }
+    input { padding: 8px; width: 70%; }
+    button { padding: 8px 16px; margin-left: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Мои привычки</h1>
+  <ul id="habits-list"></ul>
+
+  <h2>Добавить новую привычку</h2>
+  <input type="text" id="habit-input" placeholder="Например: Сделать зарядку" />
+  <button onclick="addHabit()">Добавить</button>
+
+  <script>
+  loadHabits();
+
+  async function loadHabits() {
+    const res = await fetch('http://localhost:5175/api/habits');
+    const habits = await res.json();
+    const list = document.getElementById('habits-list');
+    list.innerHTML = habits.map(h => `
+      <li>
+        <label>
+          <input type="checkbox" ${h.isCompleted ? 'checked' : ''} 
+                 onchange="toggleHabit(${h.id})">
+          ${h.name}
+        </label>
+        <button onclick="deleteHabit(${h.id})" style="float:right; margin-left:10px;">🗑️</button>
+      </li>
+    `).join('');
+  }
+
+  async function addHabit() {
+    const input = document.getElementById('habit-input');
+    const name = input.value.trim();
+    if (!name) return;
+
+    await fetch('http://localhost:5175/api/habits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name })
+    });
+
+    input.value = '';
+    loadHabits();
+  }
+
+  async function toggleHabit(id) {
+    await fetch(`http://localhost:5175/api/habits/${id}`, { method: 'PUT' });
+    loadHabits();
+  }
+
+  async function deleteHabit(id) {
+    if (confirm('Удалить привычку?')) {
+      await fetch(`http://localhost:5175/api/habits/${id}`, { method: 'DELETE' });
+      loadHabits();
+    }
+  }
+</script>
+</body>
+</html>
